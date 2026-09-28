@@ -17,13 +17,16 @@ export interface MotionResult {
   exercise: ExerciseType;
   state: MotionState;
   repCount: number;
+  perfectReps: number;
+  totalErrors: number;
   isCorrect: boolean;
-  error?: string;          // Конкретное описание ошибки (для Error Mode)
-  feedback?: string;       // Подбадривание / статус ("Отлично", "Опусти таз ниже")
+  error?: string;            // Конкретное описание ошибки (для Error Mode)
+  feedback?: string;         // Подбадривание / статус ("Отлично", "Опусти таз ниже")
+  highlightJoints?: number[]; // Индексы суставов для подсветки ошибки (красный)
   metrics?: {
-    currentAngle?: number; // Текущий ключевой угол (например, 115°)
-    targetAngle?: number;  // Целевой угол (например, 90°)
-    progress?: number;     // 0..100% выполнения текущей фазы
+    currentAngle?: number;   // Текущий ключевой угол (например, 115°)
+    targetAngle?: number;    // Целевой угол (например, 90°)
+    progress?: number;       // 0..100% выполнения текущей фазы
   };
 }
 
