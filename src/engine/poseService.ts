@@ -12,19 +12,42 @@ export class PoseService {
   /**
    * Инициализация модели MediaPipe PoseLandmarker
    */
-  async initialize(wasmUrl = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"): Promise<void> {
+  async initialize(
+    wasmUrl = "/wasm",
+    modelPath = "/models/pose_landmarker_lite.task"
+  ): Promise<void> {
+    console.log('[MediaPipe] Загрузка WASM из:', wasmUrl);
     const vision = await FilesetResolver.forVisionTasks(wasmUrl);
-    this.landmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-        delegate: "GPU"
-      },
-      runningMode: "VIDEO",
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
+    
+    try {
+      console.log('[MediaPipe] Инициализация с GPU делегатом...');
+      this.landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: modelPath,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      console.log('[MediaPipe] Успешно инициализирован (GPU)!');
+    } catch (gpuError) {
+      console.warn('[MediaPipe] GPU недоступен, переключение на CPU...', gpuError);
+      this.landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: modelPath,
+          delegate: "CPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      console.log('[MediaPipe] Успешно инициализирован (CPU)!');
+    }
   }
 
   /**

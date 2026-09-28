@@ -25,26 +25,31 @@ export default function App() {
     feedback: 'Встаньте перед камерой в полный рост'
   });
 
+  const [modelError, setModelError] = useState<string | null>(null);
+
   const kneeSmoother = useRef(new AngleSmoother(0.35));
   const lastTimeRef = useRef(performance.now());
   const frameCountRef = useRef(0);
 
   // 1. Инициализация MediaPipe Pose
+  const initModel = async () => {
+    setIsModelLoading(true);
+    setModelError(null);
+    try {
+      console.log('Инициализация MediaPipe PoseLandmarker...');
+      await poseService.initialize();
+      setIsModelLoading(false);
+      console.log('MediaPipe PoseLandmarker готов к работе!');
+    } catch (err: any) {
+      console.error('Ошибка загрузки MediaPipe:', err);
+      setIsModelLoading(false);
+      setModelError(err?.message || 'Не удалось инициализировать модель');
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
-    async function init() {
-      try {
-        console.log('Инициализация MediaPipe PoseLandmarker...');
-        await poseService.initialize();
-        if (mounted) {
-          setIsModelLoading(false);
-          console.log('MediaPipe PoseLandmarker готов к работе!');
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки MediaPipe:', err);
-      }
-    }
-    init();
+    initModel();
 
     return () => {
       mounted = false;
@@ -153,9 +158,20 @@ export default function App() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', backgroundColor: isModelLoading ? '#eab30822' : '#22c55e22', color: isModelLoading ? '#eab308' : '#22c55e', border: `1px solid ${isModelLoading ? '#eab30844' : '#22c55e44'}` }}>
-            {isModelLoading ? '⏳ Загрузка MediaPipe...' : '✓ MediaPipe готов'}
-          </span>
+          {modelError ? (
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', backgroundColor: '#ef444422', color: '#ef4444', border: '1px solid #ef444455' }}>
+                ⚠️ {modelError}
+              </span>
+              <button onClick={initModel} style={{ background: '#334155', color: '#f8fafc', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
+                Повторить
+              </button>
+            </div>
+          ) : (
+            <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', backgroundColor: isModelLoading ? '#eab30822' : '#22c55e22', color: isModelLoading ? '#eab308' : '#22c55e', border: `1px solid ${isModelLoading ? '#eab30844' : '#22c55e44'}` }}>
+              {isModelLoading ? '⏳ Загрузка MediaPipe...' : '✓ MediaPipe готов'}
+            </span>
+          )}
           <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', backgroundColor: isCameraActive ? '#3b82f622' : '#64748b22', color: isCameraActive ? '#3b82f6' : '#94a3b8', border: '1px solid #334155' }}>
             {isCameraActive ? `FPS: ${fps}` : 'Камера выключена'}
           </span>
@@ -164,7 +180,7 @@ export default function App() {
               Остановить
             </button>
           ) : (
-            <button onClick={handleStartCamera} disabled={isModelLoading} style={{ background: isModelLoading ? '#475569' : '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: isModelLoading ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
+            <button onClick={handleStartCamera} disabled={isModelLoading || !!modelError} style={{ background: (isModelLoading || !!modelError) ? '#475569' : '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: (isModelLoading || !!modelError) ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
               Включить камеру
             </button>
           )}
